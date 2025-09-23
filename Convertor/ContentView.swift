@@ -72,9 +72,9 @@ struct ContentView: View {
                 Image(systemName: "square.and.arrow.down")
                     .font(.largeTitle)
                     .foregroundColor(.gray)
-                Text("Drag and drop your media files here")
+                Text(String(localized: "Drag and drop your media files here"))
                     .foregroundColor(.gray)
-                Text("or click to select")
+                Text(String(localized: "or click to select"))
                     .foregroundColor(.gray)
                     .font(.caption)
             }
@@ -93,7 +93,7 @@ struct ContentView: View {
         Group {
             if viewModel.conversionItems.isEmpty {
                 Spacer()
-                Text("No media to convert.")
+                Text(String(localized: "No media to convert."))
                     .foregroundColor(.secondary)
                 Spacer()
             } else {
@@ -105,7 +105,7 @@ struct ContentView: View {
                                     .foregroundColor(iconColor(for: item.status))
                                 if renamingItemID == item.id {
                                     TextField(
-                                        "File name",
+                                        String(localized: "File name"),
                                         text: Binding(
                                             get: { item.customName },
                                             set: { newValue in
@@ -174,19 +174,19 @@ struct ContentView: View {
                             }
 
                         }
-                         .padding(.vertical, 5)
-                         .contextMenu {
-                             Button(role: .destructive) {
-                                 if let index = viewModel.conversionItems.firstIndex(where: {
-                                     $0.id == item.id
-                                 }) {
-                                     viewModel.removeItems(at: IndexSet(integer: index))
-                                 }
-                             } label: {
-                                 Label(String(localized: "Delete"), systemImage: "trash")
-                             }
-                         }
-                     }
+                        .padding(.vertical, 5)
+                        .contextMenu {
+                            Button(role: .destructive) {
+                                if let index = viewModel.conversionItems.firstIndex(where: {
+                                    $0.id == item.id
+                                }) {
+                                    viewModel.removeItems(at: IndexSet(integer: index))
+                                }
+                            } label: {
+                                Label(String(localized: "Delete"), systemImage: "trash")
+                            }
+                        }
+                    }
 
                 }
                 .listStyle(.inset)
@@ -216,7 +216,7 @@ struct ContentView: View {
                 .controlSize(.large)
                 .tint(.red)
             } else {
-                Button("Clear List") {
+                Button(String(localized: "Clear List")) {
                     viewModel.clearConversionItems()
                 }
                 .buttonStyle(.bordered)
@@ -226,7 +226,7 @@ struct ContentView: View {
 
             Spacer()
 
-            Button("Convert All") {
+            Button(String(localized: "Convert All")) {
                 viewModel.convertAllFiles()
             }
             .buttonStyle(.borderedProminent)

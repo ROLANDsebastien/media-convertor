@@ -67,3 +67,5 @@
 "Failed to start FFmpeg process: " = "Échec du démarrage du processus FFmpeg : ";
 "Conversion Completed" = "Conversion terminée";
 "%@ has been converted successfully." = "%@ a été converti avec succès.";
+"Select..." = "Sélectionner...";
+"File name" = "Nom du fichier";
