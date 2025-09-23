@@ -1,3 +1,4 @@
+media-convertor/README.md#L1-200
 # Convertor
 
 Media file converter for macOS.
@@ -42,6 +43,42 @@ This application allows you to convert your audio (FLAC) and video (MKV, MP4) fi
 3.  Select the `Convertor` scheme.
 4.  Build and run the application.
 
+## Architecture
+
+The application is built using SwiftUI for the user interface and follows the MVVM (Model-View-ViewModel) architecture pattern.
+
+### Key Components
+
+- **ContentView**: Main view handling the UI, drag-and-drop, and file list.
+- **ConvertorViewModel**: Manages the application state, conversion queue, and business logic.
+- **ConversionService**: Handles the actual media conversion using FFmpeg.
+- **MediaInfoService**: Extracts metadata from media files (audio/subtitle tracks).
+- **Settings**: Manages user preferences and defaults.
+
+### Conversion Process
+
+1. Files are added via drag-and-drop or file picker.
+2. Media type is detected based on file extension.
+3. For videos, FFmpeg is used to extract available audio and subtitle tracks.
+4. Conversions are queued and processed concurrently (up to a configurable limit).
+5. Progress is tracked in real-time by parsing FFmpeg's stderr output.
+6. Completed files are saved to the specified output directory.
+
+## Technical Details
+
+- **FFmpeg Integration**: The app bundles a static FFmpeg binary for media processing.
+- **Hardware Acceleration**: Uses VideoToolbox on Apple Silicon for H.264/H.265 encoding.
+- **Concurrency**: Utilizes Combine framework for reactive programming and async/await for conversions.
+- **Security**: Implements security-scoped bookmarks for accessing user-selected directories.
+- **Localization**: Supports English and French with String Catalog.
+
+## Dependencies
+
+- FFmpeg (bundled in Resources/ffmpeg)
+- SwiftUI
+- Combine
+- AVFoundation (for media type detection)
+
 ## Screenshots
 
 ![Main Window](screenshots/screenshot-main.png)
@@ -49,6 +86,7 @@ This application allows you to convert your audio (FLAC) and video (MKV, MP4) fi
 
 ## License
 
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 
@@ -96,9 +134,47 @@ Cette application vous permet de convertir vos fichiers audio (FLAC) et vidéo (
 3.  Sélectionnez le schéma `Convertor`.
 4.  Compilez et exécutez l'application.
 
+## Architecture
+
+L'application est construite en utilisant SwiftUI pour l'interface utilisateur et suit le modèle d'architecture MVVM (Modèle-Vue-ViewModel).
+
+### Composants Clés
+
+- **ContentView** : Vue principale gérant l'interface utilisateur, le glisser-déposer et la liste des fichiers.
+- **ConvertorViewModel** : Gère l'état de l'application, la file d'attente de conversion et la logique métier.
+- **ConversionService** : Gère la conversion réelle des médias en utilisant FFmpeg.
+- **MediaInfoService** : Extrait les métadonnées des fichiers médias (pistes audio/sous-titres).
+- **Settings** : Gère les préférences utilisateur et les valeurs par défaut.
+
+### Processus de Conversion
+
+1. Les fichiers sont ajoutés via glisser-déposer ou sélecteur de fichiers.
+2. Le type de média est détecté en fonction de l'extension du fichier.
+3. Pour les vidéos, FFmpeg est utilisé pour extraire les pistes audio et sous-titres disponibles.
+4. Les conversions sont mises en file d'attente et traitées simultanément (jusqu'à une limite configurable).
+5. La progression est suivie en temps réel en analysant la sortie stderr de FFmpeg.
+6. Les fichiers terminés sont sauvegardés dans le répertoire de sortie spécifié.
+
+## Détails Techniques
+
+- **Intégration FFmpeg** : L'application inclut un binaire FFmpeg statique pour le traitement des médias.
+- **Accélération Matérielle** : Utilise VideoToolbox sur Apple Silicon pour l'encodage H.264/H.265.
+- **Concurrence** : Utilise le framework Combine pour la programmation réactive et async/await pour les conversions.
+- **Sécurité** : Implémente des signets de sécurité pour accéder aux répertoires sélectionnés par l'utilisateur.
+- **Localisation** : Prend en charge l'anglais et le français avec String Catalog.
+
+## Dépendances
+
+- FFmpeg (inclus dans Resources/ffmpeg)
+- SwiftUI
+- Combine
+- AVFoundation (pour la détection du type de média)
+
 ## Captures d'écran
 
 ![Fenêtre principale](screenshots/screenshot-main.png)
 ![Paramètres](screenshots/screenshot-settings.png)
 
 ## Licence
+
+Ce projet est sous licence MIT - voir le fichier [LICENSE](LICENSE) pour plus de détails.
