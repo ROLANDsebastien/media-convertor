@@ -1,3 +1,4 @@
+import Cocoa
 import SwiftUI
 import UserNotifications
 
@@ -6,6 +7,7 @@ struct ConvertorApp: App {
     @StateObject private var languageManager = LanguageManager()
     @StateObject private var settings = Settings()
     private let notificationDelegate = NotificationDelegate()
+    @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @AppStorage("isDarkMode") private var isDarkMode = false
 
     var body: some Scene {
