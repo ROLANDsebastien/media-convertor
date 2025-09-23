@@ -3,7 +3,7 @@ media-convertor/README.md#L1-200
 
 Media file converter for macOS.
 
-This application allows you to convert your audio (FLAC) and video (MKV, MP4) files to Apple-compatible formats (AAC/ALAC for audio, MOV for video). It's a powerful and efficient tool for preparing your media files for your Apple devices, with hardware acceleration for fast conversions.
+This application allows you to convert your audio (FLAC) and video (MKV, MP4) files to Apple-compatible formats (AAC/ALAC for audio, MP4 for video). It's a powerful and efficient tool for preparing your media files for your Apple devices, with hardware acceleration for fast conversions.
 
 ## Features
 
@@ -13,7 +13,7 @@ This application allows you to convert your audio (FLAC) and video (MKV, MP4) fi
 - Preserves metadata (including album art).
 
 ### Video Conversion
-- Convert MKV, MP4, and WebM files to MOV or MP4 format.
+- Convert MKV, MP4, and WebM files to MP4 format.
 - Hardware-accelerated encoding using VideoToolbox (H.264/H.265).
 - Customizable video codec (H.264 or H.265 HEVC).
 - Adjustable resolution (720p, 1080p, 4K).
@@ -94,7 +94,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 Convertisseur de fichiers multimédia pour macOS.
 
-Cette application vous permet de convertir vos fichiers audio (FLAC) et vidéo (MKV, MP4) vers des formats compatibles Apple (AAC/ALAC pour l'audio, MOV pour la vidéo). C'est un outil puissant et efficace pour préparer vos fichiers multimédia pour vos appareils Apple, avec accélération matérielle pour des conversions rapides.
+Cette application vous permet de convertir vos fichiers audio (FLAC) et vidéo (MKV, MP4) vers des formats compatibles Apple (AAC/ALAC pour l'audio, MP4 pour la vidéo). C'est un outil puissant et efficace pour préparer vos fichiers multimédia pour vos appareils Apple, avec accélération matérielle pour des conversions rapides.
 
 ## Fonctionnalités
 
@@ -104,7 +104,7 @@ Cette application vous permet de convertir vos fichiers audio (FLAC) et vidéo (
 - Préserve les métadonnées (y compris les pochettes d'album).
 
 ### Conversion Vidéo
-- Conversion des fichiers MKV, MP4 et WebM vers le format MOV ou MP4.
+- Conversion des fichiers MKV, MP4 et WebM vers le format MP4.
 - Encodage accéléré matériellement utilisant VideoToolbox (H.264/H.265).
 - Codec vidéo personnalisable (H.264 ou H.265 HEVC).
 - Résolution ajustable (720p, 1080p, 4K).

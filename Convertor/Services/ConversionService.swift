@@ -313,15 +313,21 @@ class ConversionService {
                                 "-c:s", "mov_text",
                             ]
 
-                            if let subtitle = item.availableSubtitleTracks.first(where: { $0.index == subtitleTrackID }) {
+                            if let subtitle = item.availableSubtitleTracks.first(where: {
+                                $0.index == subtitleTrackID
+                            }) {
                                 // Set language metadata if available
                                 if !subtitle.language.isEmpty, subtitle.language != "und" {
-                                    subtitleArgs.append(contentsOf: ["-metadata:s:s:0", "language=\(subtitle.language)"])
+                                    subtitleArgs.append(contentsOf: [
+                                        "-metadata:s:s:0", "language=\(subtitle.language)",
+                                    ])
                                 }
 
                                 // Set title metadata
                                 if !subtitle.title.isEmpty {
-                                    subtitleArgs.append(contentsOf: ["-metadata:s:s:0", "title=\(subtitle.title)"])
+                                    subtitleArgs.append(contentsOf: [
+                                        "-metadata:s:s:0", "title=\(subtitle.title)",
+                                    ])
                                 }
                             }
                             arguments.append(contentsOf: subtitleArgs)
@@ -529,7 +535,11 @@ class ConversionService {
         -> URL
     {
         let directory =
-            outputDirectory ?? URL(fileURLWithPath: (ProcessInfo.processInfo.environment["HOME"] ?? "/Users/\(NSUserName())")).appendingPathComponent("Documents")
+            outputDirectory
+            ?? URL(
+                fileURLWithPath: (ProcessInfo.processInfo.environment["HOME"]
+                    ?? "/Users/\(NSUserName())")
+            ).appendingPathComponent("Documents")
         let filename = fileURL.deletingPathExtension().lastPathComponent
         let fileExtension: String
         switch outputFormat {
@@ -542,7 +552,9 @@ class ConversionService {
         let outputURL = directory.appendingPathComponent(outputFilename)
 
         // If output path is the same as input path, add suffix to avoid overwriting
-        if outputURL.standardized.path.compare(fileURL.standardized.path, options: .caseInsensitive) == .orderedSame {
+        if outputURL.standardized.path.compare(fileURL.standardized.path, options: .caseInsensitive)
+            == .orderedSame
+        {
             let newOutputFilename = "\(filename)_converted.\(fileExtension)"
             return directory.appendingPathComponent(newOutputFilename)
         }

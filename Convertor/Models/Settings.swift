@@ -84,8 +84,6 @@ class Settings: ObservableObject {
         }
     }
 
-
-
     @Published var defaultOutputFormat: OutputFormat {
         didSet {
             UserDefaults.standard.set(defaultOutputFormat.rawValue, forKey: "defaultOutputFormat")
@@ -165,7 +163,11 @@ class Settings: ObservableObject {
     var outputDirectory: URL? {
         switch outputDirectoryType {
         case .documents, .downloads:
-            return outputDirectoryType.url ?? URL(fileURLWithPath: (ProcessInfo.processInfo.environment["HOME"] ?? "/Users/\(NSUserName())")).appendingPathComponent("Documents")
+            return outputDirectoryType.url
+                ?? URL(
+                    fileURLWithPath: (ProcessInfo.processInfo.environment["HOME"]
+                        ?? "/Users/\(NSUserName())")
+                ).appendingPathComponent("Documents")
         case .custom:
             return customOutputDirectory
         }
