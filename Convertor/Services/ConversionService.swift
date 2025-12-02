@@ -445,11 +445,12 @@ class ConversionService {
                         }
                     }
 
+                    let cleanupThumbnailURL = temporaryThumbnailURL
                     process!.terminationHandler = { process in
                         errorFileHandle.readabilityHandler = nil
                         
                         // Nettoyer la miniature temporaire si elle existe
-                        if let thumbURL = temporaryThumbnailURL {
+                        if let thumbURL = cleanupThumbnailURL {
                             try? FileManager.default.removeItem(at: thumbURL)
                             print("🧹 Cleaned up temporary thumbnail")
                         }

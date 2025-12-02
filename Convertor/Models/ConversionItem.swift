@@ -89,6 +89,7 @@ struct ConversionItem: Identifiable, Equatable {
     var maxFileSizeMB: Int? = nil
     var progress: Double = 0.0
     var errorMessage: String? = nil
+    var outputURL: URL? = nil
 
     // New properties for track selection
     var availableAudioTracks: [AudioTrack] = []

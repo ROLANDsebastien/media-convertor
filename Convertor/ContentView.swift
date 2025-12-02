@@ -1,3 +1,4 @@
+import Cocoa
 import Combine
 import SwiftUI
 import UniformTypeIdentifiers
@@ -31,78 +32,105 @@ struct ContentView: View {
     }
 
     private var mainContent: some View {
-        VStack {
-            titleView
+        VStack(spacing: 0) {
             dragDropArea
             fileListView
-            Spacer()
-            controlsView
+        }
+        .toolbar {
+            ToolbarItemGroup(placement: .primaryAction) {
+                Button(action: { showFileImporter = true }) {
+                    Label(String(localized: "Add Files"), systemImage: "plus")
+                }
+                .help(String(localized: "Add media files to convert"))
+                
+                Button(action: { viewModel.convertAllFiles() }) {
+                    Label(String(localized: "Convert All"), systemImage: "play.fill")
+                }
+                .disabled(viewModel.conversionItems.isEmpty || viewModel.isConverting)
+                .help(String(localized: "Start converting all files"))
+                
+                if viewModel.isConverting {
+                    Button(action: { viewModel.cancelAllConversions() }) {
+                        Label(String(localized: "Cancel All"), systemImage: "stop.fill")
+                    }
+                    .help(String(localized: "Cancel all conversions"))
+                } else {
+                    Button(action: { viewModel.clearConversionItems() }) {
+                        Label(String(localized: "Clear"), systemImage: "trash")
+                    }
+                    .disabled(viewModel.conversionItems.isEmpty)
+                    .help(String(localized: "Clear all files from list"))
+                }
+            }
+            
+            ToolbarItem(placement: .automatic) {
+                Button(action: { showSettings = true }) {
+                    Label(String(localized: "Settings"), systemImage: "gear")
+                }
+                .help(String(localized: "Open settings"))
+            }
         }
     }
 
-    private var titleView: some View {
-        ZStack {
-            Text(String(localized: "Media Converter"))
-                .font(.largeTitle)
-                .fontWeight(.bold)
-                .padding(.bottom, 10)
-            HStack {
-                Spacer()
-                Button(action: { showSettings = true }) {
-                    Image(systemName: "gear")
-                }
-                .padding(.bottom, 10)
-            }
-        }
-        .padding(.horizontal)
-    }
+
 
     private var dragDropArea: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 15)
-                .fill(isTargeted ? Color.accentColor.opacity(0.2) : Color.gray.opacity(0.1))
+            RoundedRectangle(cornerRadius: 10)
+                .fill(isTargeted ? Color.accentColor.opacity(0.15) : Color(NSColor.controlBackgroundColor))
                 .strokeBorder(
-                    isTargeted ? Color.accentColor : Color.gray.opacity(0.4),
-                    style: StrokeStyle(lineWidth: isTargeted ? 3 : 2, dash: [5, 10])
+                    isTargeted ? Color.accentColor : Color.gray.opacity(0.3),
+                    style: StrokeStyle(lineWidth: isTargeted ? 2 : 1, dash: [5, 5])
                 )
-                .frame(height: 150)
-                .padding(.horizontal)
+                .frame(height: 80)
 
-            VStack {
-                Image(systemName: "square.and.arrow.down")
-                    .font(.largeTitle)
-                    .foregroundColor(.gray)
-                Text(String(localized: "Drag and drop your media files here"))
-                    .foregroundColor(.gray)
-                Text(String(localized: "or click to select"))
-                    .foregroundColor(.gray)
-                    .font(.caption)
-            }
-            .onTapGesture {
-                showFileImporter = true
+            HStack(spacing: 12) {
+                Image(systemName: "arrow.down.doc")
+                    .font(.title2)
+                    .foregroundColor(.secondary)
+                Text(String(localized: "Drag files here"))
+                    .foregroundColor(.secondary)
+                Text("•")
+                    .foregroundColor(.secondary)
+                Button(String(localized: "Browse...")) {
+                    showFileImporter = true
+                }
+                .buttonStyle(.link)
             }
         }
         .onDrop(of: [.fileURL], isTargeted: $isTargeted) { providers in
             handleDrop(providers: providers)
             return true
         }
-        .padding(.bottom)
+        .padding(.horizontal)
+        .padding(.vertical, 12)
     }
 
     private var fileListView: some View {
         Group {
             if viewModel.conversionItems.isEmpty {
-                Spacer()
-                Text(String(localized: "No media to convert."))
-                    .foregroundColor(.secondary)
-                Spacer()
+                VStack(spacing: 12) {
+                    Image(systemName: "film.stack")
+                        .font(.system(size: 48))
+                        .foregroundColor(.secondary.opacity(0.5))
+                    Text(String(localized: "No media to convert."))
+                        .foregroundColor(.secondary)
+                        .font(.title3)
+                    Text(String(localized: "Drag files or click Browse to get started"))
+                        .foregroundColor(.secondary)
+                        .font(.caption)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 List {
                     ForEach(viewModel.conversionItems) { item in
-                        VStack(alignment: .leading) {
-                            HStack {
+                        VStack(alignment: .leading, spacing: 6) {
+                            HStack(spacing: 8) {
                                 Image(systemName: iconName(for: item.status))
                                     .foregroundColor(iconColor(for: item.status))
+                                    .font(.body)
+                                    .frame(width: 20)
+                                
                                 if renamingItemID == item.id {
                                     TextField(
                                         String(localized: "File name"),
@@ -120,121 +148,102 @@ struct ContentView: View {
                                     .textFieldStyle(.roundedBorder)
                                 } else {
                                     Text(item.customName)
-                                        .onTapGesture(count: 2) {
-                                            if item.status != .converting {
-                                                renamingItemID = item.id
-                                            }
-                                        }
+                                        .lineLimit(1)
                                 }
+                                
                                 Spacer()
-                                if item.status == .converting {
-                                    ProgressView(value: item.progress)
-                                        .frame(width: 100)
-                                        .overlay(
-                                            Text(String(format: "%.0f%%", item.progress * 100))
-                                                .font(.caption)
-                                                .foregroundColor(.secondary)
-                                                .offset(y: 12),  // Adjust this offset if needed
-                                            alignment: .bottom
-                                        )
-                                } else {
+                                
+                                if item.status != .converting {
                                     Text(statusText(for: item.status))
                                         .font(.caption)
                                         .foregroundColor(.secondary)
                                 }
+                                
                                 if item.status == .converting {
+                                    Text(String(format: "%.0f%%", item.progress * 100))
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                        .monospacedDigit()
+                                    
                                     Button(action: { viewModel.cancelConversion(for: item.id) }) {
                                         Image(systemName: "xmark.circle.fill")
+                                            .foregroundColor(.secondary)
                                     }
-                                    .buttonStyle(.borderless)
+                                    .buttonStyle(.plain)
+                                    .help(String(localized: "Cancel conversion"))
                                 }
+                            }
+                            
+                            if item.status == .converting {
+                                ProgressView(value: item.progress)
+                                    .progressViewStyle(.linear)
+                                    .tint(.accentColor)
+                            }
+                            
+                            if item.status == .failed, let errorMessage = item.errorMessage {
+                                Text(errorMessage)
+                                    .font(.caption)
+                                    .foregroundColor(.red)
+                                    .lineLimit(2)
+                            }
+                        }
+                        .padding(.vertical, 4)
+                        .contextMenu {
+                            if item.status != .converting {
+                                Button(action: {
+                                    renamingItemID = item.id
+                                }) {
+                                    Label(String(localized: "Rename"), systemImage: "pencil")
+                                }
+                                
                                 Button(action: {
                                     selectedItem = item
                                 }) {
-                                    Image(systemName: "gear")
+                                    Label(String(localized: "Settings"), systemImage: "gear")
                                 }
-                                .buttonStyle(.borderless)
+                                
+                                Divider()
+                            }
+                            
+                            if item.status == .completed {
                                 Button(action: {
+                                    if let outputURL = item.outputURL {
+                                        NSWorkspace.shared.activateFileViewerSelecting([outputURL])
+                                    }
+                                }) {
+                                    Label(String(localized: "Show in Finder"), systemImage: "folder")
+                                }
+                                
+                                Divider()
+                            }
+                            
+                            if item.status == .converting {
+                                Button(action: {
+                                    viewModel.cancelConversion(for: item.id)
+                                }) {
+                                    Label(String(localized: "Cancel"), systemImage: "xmark.circle")
+                                }
+                            } else {
+                                Button(role: .destructive, action: {
                                     if let index = viewModel.conversionItems.firstIndex(where: {
                                         $0.id == item.id
                                     }) {
                                         viewModel.removeItems(at: IndexSet(integer: index))
                                     }
                                 }) {
-                                    Image(systemName: "trash")
-                                        .foregroundColor(.red)
+                                    Label(String(localized: "Delete"), systemImage: "trash")
                                 }
-                                .buttonStyle(.borderless)
-                                .disabled(item.status == .converting)
-                            }
-                            if item.status == .failed, let errorMessage = item.errorMessage {
-                                Text(errorMessage)
-                                    .font(.caption)
-                                    .foregroundColor(.red)
-                            }
-
-                        }
-                        .padding(.vertical, 5)
-                        .contextMenu {
-                            Button(role: .destructive) {
-                                if let index = viewModel.conversionItems.firstIndex(where: {
-                                    $0.id == item.id
-                                }) {
-                                    viewModel.removeItems(at: IndexSet(integer: index))
-                                }
-                            } label: {
-                                Label(String(localized: "Delete"), systemImage: "trash")
                             }
                         }
                     }
-
                 }
                 .listStyle(.inset)
-                .frame(minHeight: 150, maxHeight: .infinity)
-                .cornerRadius(10)
                 .padding(.horizontal)
             }
         }
     }
 
-    private var controlsView: some View {
-        VStack {
-            actionButtonsView
-        }
-        .padding(.vertical)
-        .cornerRadius(15)
-        .padding()
-    }
 
-    private var actionButtonsView: some View {
-        HStack {
-            if viewModel.isConverting {
-                Button(String(localized: "Cancel All")) {
-                    viewModel.cancelAllConversions()
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.large)
-                .tint(.red)
-            } else {
-                Button(String(localized: "Clear List")) {
-                    viewModel.clearConversionItems()
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.large)
-                .tint(.red)
-            }
-
-            Spacer()
-
-            Button(String(localized: "Convert All")) {
-                viewModel.convertAllFiles()
-            }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
-            .disabled(viewModel.conversionItems.isEmpty || viewModel.isConverting)
-        }
-        .padding(.horizontal)
-    }
 
     // MARK: - Helper Functions
 

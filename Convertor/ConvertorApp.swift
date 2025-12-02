@@ -16,12 +16,13 @@ struct ConvertorApp: App {
                 .environment(\.locale, languageManager.currentLocale)
                 .environmentObject(languageManager)
                 .environmentObject(settings)
+                .frame(minWidth: 600, minHeight: 400)
                 .onAppear {
                     setupNotifications()
                     applyTheme()
                 }
         }
-        .defaultSize(width: 600, height: 400)
+        .defaultSize(width: 800, height: 600)
         .windowStyle(.automatic)
     }
 

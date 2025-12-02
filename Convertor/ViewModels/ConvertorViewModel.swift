@@ -90,8 +90,8 @@ class ConvertorViewModel: ObservableObject {
                     return
                 }
                 switch result {
-                case .success(_):
-                    self.updateStatus(for: itemID, status: .completed)
+                case .success(let url):
+                    self.updateStatus(for: itemID, status: .completed, outputURL: url)
                 case .failure(let error):
                     self.updateStatus(
                         for: itemID, status: .failed, error: error.localizedDescription)
@@ -228,12 +228,15 @@ class ConvertorViewModel: ObservableObject {
         isConverting = false
     }
 
-    private func updateStatus(for itemID: UUID, status: ConversionStatus, error: String? = nil) {
+    private func updateStatus(for itemID: UUID, status: ConversionStatus, error: String? = nil, outputURL: URL? = nil) {
         if let index = conversionItems.firstIndex(where: { $0.id == itemID }) {
             var item = conversionItems[index]
             item.status = status
             if let error = error {
                 item.errorMessage = error
+            }
+            if let outputURL = outputURL {
+                item.outputURL = outputURL
             }
             conversionItems[index] = item
 

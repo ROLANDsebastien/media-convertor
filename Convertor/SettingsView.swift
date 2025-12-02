@@ -1,121 +1,154 @@
+import Cocoa
 import SwiftUI
 import UniformTypeIdentifiers
 
 struct SettingsView: View {
     @ObservedObject var settings: Settings
-    @Environment(\.presentationMode) var presentationMode
+    @Environment(\.dismiss) var dismiss
     @AppStorage("isDarkMode") private var isDarkMode = false
 
     var body: some View {
-        VStack(spacing: 20) {
-            Text(String(localized: "Settings"))
-                .font(.largeTitle)
-                .fontWeight(.bold)
-                .padding(.top)
-
-            ScrollView {
-                Form {
-                    Section(header: Text(String(localized: "Appearance"))) {
-                        Toggle(String(localized: "Dark Mode"), isOn: $isDarkMode)
-                            .onChange(of: isDarkMode) { _, newValue in
-                                NSApp.appearance =
-                                    newValue
-                                    ? NSAppearance(named: .darkAqua) : NSAppearance(named: .aqua)
-                            }
-                    }
-
-                    Section(header: Text(String(localized: "Default Audio Settings"))) {
-                        Picker(String(localized: "Audio Format"), selection: $settings.defaultAudioFormat) {
-                            ForEach([OutputFormat.aac, .alac], id: \.self) { format in
-                                Text(format.rawValue.uppercased()).tag(format)
-                            }
-                        }
-
-                        Picker(String(localized: "Audio Quality"), selection: $settings.audioQuality) {
-                            ForEach(AudioQuality.allCases) { quality in
-                                Text(quality.name).tag(quality)
-                            }
-                        }
-                    }
-
-                    Section(header: Text(String(localized: "Default Video Settings"))) {
-                        Picker(String(localized: "Video Codec"), selection: $settings.defaultVideoCodec) {
-                             ForEach(VideoCodec.allCases, id: \.self) { codec in
-                                 Text(codec.rawValue).tag(codec)
-                             }
-                         }
-
-                         Picker(String(localized: "Video Quality"), selection: $settings.videoQuality) {
-                             ForEach(VideoQuality.allCases) { quality in
-                                 Text(quality.name).tag(quality)
-                             }
-                         }
-                     }
-
-                    Section(header: Text(String(localized: "Performance"))) {
-                        Stepper(
-                            String(localized: "Maximum Concurrent Tasks: ") + "\(settings.maxConcurrentTasks)",
-                            value: $settings.maxConcurrentTasks,
-                            in: 1...16
-                        )
-                    }
-
-                    Section(header: Text(String(localized: "Output Directory"))) {
-                        Picker(String(localized: "Output Directory"), selection: $settings.outputDirectoryType) {
-                            ForEach(OutputDirectoryType.allCases, id: \.self) { type in
-                                Text(type.displayName).tag(type)
-                            }
-                        }
-
-                        if settings.outputDirectoryType == .custom {
-                            HStack {
-                                Text(
-                                    settings.customOutputDirectory?.lastPathComponent
-                                        ?? String(localized: "Select...")
-                                )
-                                .foregroundColor(.secondary)
-                                Spacer()
-                                Button(String(localized: "Select...")) {
-                                    selectCustomFolder()
-                                }
-                                .buttonStyle(.bordered)
-                            }
-                        }
-                    }
+        TabView {
+            GeneralSettingsView(settings: settings, isDarkMode: $isDarkMode)
+                .tabItem {
+                    Label(String(localized: "General"), systemImage: "gear")
                 }
-                .formStyle(.grouped)
-                .padding()
-            }
-
-            HStack {
-                Spacer()
-                Button(String(localized: "Done")) {
-                    presentationMode.wrappedValue.dismiss()
+            
+            AudioSettingsView(settings: settings)
+                .tabItem {
+                    Label(String(localized: "Audio"), systemImage: "music.note")
                 }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
-            }
-            .padding(.horizontal)
-            .padding(.bottom)
+            
+            VideoSettingsView(settings: settings)
+                .tabItem {
+                    Label(String(localized: "Video"), systemImage: "film")
+                }
         }
-        .frame(width: 600, height: 650)
+        .frame(width: 450, height: 300)
+        .padding()
+        .toolbar {
+            ToolbarItem(placement: .confirmationAction) {
+                Button(String(localized: "Done")) {
+                    dismiss()
+                }
+            }
+        }
     }
+}
 
+private struct GeneralSettingsView: View {
+    @ObservedObject var settings: Settings
+    @Binding var isDarkMode: Bool
+    
+    var body: some View {
+        Form {
+            Section {
+                Toggle(String(localized: "Dark Mode"), isOn: $isDarkMode)
+                    .onChange(of: isDarkMode) { _, newValue in
+                        NSApp.appearance = newValue ? NSAppearance(named: .darkAqua) : NSAppearance(named: .aqua)
+                    }
+            } header: {
+                Text(String(localized: "Appearance"))
+            }
+            
+            Section {
+                Stepper(
+                    String(localized: "Max Concurrent Tasks: ") + "\(settings.maxConcurrentTasks)",
+                    value: $settings.maxConcurrentTasks,
+                    in: 1...16
+                )
+            } header: {
+                Text(String(localized: "Performance"))
+            }
+            
+            Section {
+                Picker(String(localized: "Location"), selection: $settings.outputDirectoryType) {
+                    ForEach(OutputDirectoryType.allCases, id: \.self) { type in
+                        Text(type.displayName).tag(type)
+                    }
+                }
+                
+                if settings.outputDirectoryType == .custom {
+                    HStack {
+                        Text(settings.customOutputDirectory?.lastPathComponent ?? String(localized: "Select..."))
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                        Spacer()
+                        Button(String(localized: "Choose...")) {
+                            selectCustomFolder()
+                        }
+                    }
+                }
+            } header: {
+                Text(String(localized: "Output Directory"))
+            }
+        }
+        .formStyle(.grouped)
+    }
+    
     private func selectCustomFolder() {
         let openPanel = NSOpenPanel()
         openPanel.title = "Choose Output Folder"
-        openPanel.message = "Select a folder where converted files will be saved."
-        openPanel.showsHiddenFiles = false
         openPanel.canChooseFiles = false
         openPanel.canChooseDirectories = true
-        openPanel.allowsMultipleSelection = false
         openPanel.canCreateDirectories = true
-
+        
         if openPanel.runModal() == .OK {
             if let url = openPanel.url {
                 settings.customOutputDirectory = url
             }
         }
+    }
+}
+
+private struct AudioSettingsView: View {
+    @ObservedObject var settings: Settings
+    
+    var body: some View {
+        Form {
+            Section {
+                Picker(String(localized: "Format"), selection: $settings.defaultAudioFormat) {
+                    ForEach([OutputFormat.aac, .alac], id: \.self) { format in
+                        Text(format.rawValue.uppercased()).tag(format)
+                    }
+                }
+                
+                Picker(String(localized: "Quality"), selection: $settings.audioQuality) {
+                    ForEach(AudioQuality.allCases) { quality in
+                        Text(quality.name).tag(quality)
+                    }
+                }
+            } header: {
+                Text(String(localized: "Default Audio Options"))
+            }
+        }
+        .formStyle(.grouped)
+    }
+}
+
+private struct VideoSettingsView: View {
+    @ObservedObject var settings: Settings
+    
+    var body: some View {
+        Form {
+            Section {
+                Picker(String(localized: "Codec"), selection: $settings.defaultVideoCodec) {
+                    ForEach(VideoCodec.allCases, id: \.self) { codec in
+                        Text(codec.rawValue).tag(codec)
+                    }
+                }
+                
+                Picker(String(localized: "Quality"), selection: $settings.videoQuality) {
+                    ForEach(VideoQuality.allCases) { quality in
+                        Text(quality.name).tag(quality)
+                    }
+                }
+            } header: {
+                Text(String(localized: "Default Video Options"))
+            }
+        }
+        .formStyle(.grouped)
     }
 }
 
