@@ -248,6 +248,9 @@ class ConversionService {
                         item.mediaType == .audio
                         ? self.checkForAttachedPicture(in: item.sourceURL, ffmpegURL: ffmpegURL)
                         : false
+                    
+                    // Variable pour stocker l'URL de la miniature temporaire (pour nettoyage ultérieur)
+                    var temporaryThumbnailURL: URL? = nil
 
                     var arguments: [String]
                     if item.mediaType == .audio {
@@ -278,13 +281,59 @@ class ConversionService {
                         print("🎬 Starting video conversion for \(item.sourceURL.lastPathComponent)")
                         
                         if item.videoCodec == .hevcCopy {
-                            arguments = [
+                            // Pour la conversion passthrough, on génère d'abord une miniature
+                            // pour que macOS/QuickLook puisse afficher un aperçu
+                            let thumbnailURL = outputURL.deletingLastPathComponent()
+                                .appendingPathComponent("thumb_\(UUID().uuidString).jpg")
+                            temporaryThumbnailURL = thumbnailURL
+                            
+                            // Extraire une frame à 10% de la durée comme miniature
+                            let thumbnailTime = duration * 0.1
+                            let thumbnailProcess = Process()
+                            thumbnailProcess.executableURL = ffmpegURL
+                            thumbnailProcess.arguments = [
+                                "-ss", String(format: "%.2f", thumbnailTime),
                                 "-i", item.sourceURL.path,
-                                "-map", "0:v",
-                                "-c:v", "copy",
-                                "-tag:v", "hvc1",
-                                "-movflags", "+faststart"
+                                "-vframes", "1",
+                                "-q:v", "2",
+                                "-y",
+                                thumbnailURL.path
                             ]
+                            
+                            do {
+                                try thumbnailProcess.run()
+                                thumbnailProcess.waitUntilExit()
+                            } catch {
+                                print("⚠️ Warning: Could not generate thumbnail: \(error.localizedDescription)")
+                            }
+                            
+                            // Vérifier si la miniature a été créée
+                            let hasThumbnail = FileManager.default.fileExists(atPath: thumbnailURL.path)
+                            
+                            if hasThumbnail {
+                                // Conversion avec miniature intégrée
+                                arguments = [
+                                    "-i", item.sourceURL.path,
+                                    "-i", thumbnailURL.path,
+                                    "-map", "0:v",
+                                    "-map", "1:v",
+                                    "-c:v:0", "copy",
+                                    "-c:v:1", "mjpeg",
+                                    "-disposition:v:0", "default",
+                                    "-disposition:v:1", "attached_pic",
+                                    "-tag:v:0", "hvc1",
+                                    "-movflags", "+faststart"
+                                ]
+                            } else {
+                                // Fallback sans miniature
+                                arguments = [
+                                    "-i", item.sourceURL.path,
+                                    "-map", "0:v",
+                                    "-c:v", "copy",
+                                    "-tag:v", "hvc1",
+                                    "-movflags", "+faststart"
+                                ]
+                            }
                             
                             if let audioTrackID = item.selectedAudioTrackID {
                                 arguments.append(contentsOf: ["-map", "0:\(audioTrackID)", "-c:a", "copy"])
@@ -398,6 +447,13 @@ class ConversionService {
 
                     process!.terminationHandler = { process in
                         errorFileHandle.readabilityHandler = nil
+                        
+                        // Nettoyer la miniature temporaire si elle existe
+                        if let thumbURL = temporaryThumbnailURL {
+                            try? FileManager.default.removeItem(at: thumbURL)
+                            print("🧹 Cleaned up temporary thumbnail")
+                        }
+                        
                         print(
                             "🔚 FFmpeg process terminated with status: \(process.terminationStatus)")
                         if process.terminationStatus == 255 {
