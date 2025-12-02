@@ -297,6 +297,7 @@ class ConversionService {
                                 "-vframes", "1",
                                 "-q:v", "2",
                                 "-y",
+                                "-update", "1",
                                 thumbnailURL.path
                             ]
                             
@@ -321,7 +322,6 @@ class ConversionService {
                                     "-c:v:1", "mjpeg",
                                     "-disposition:v:0", "default",
                                     "-disposition:v:1", "attached_pic",
-                                    "-tag:v:0", "hvc1",
                                     "-movflags", "+faststart"
                                 ]
                             } else {
@@ -330,7 +330,6 @@ class ConversionService {
                                     "-i", item.sourceURL.path,
                                     "-map", "0:v",
                                     "-c:v", "copy",
-                                    "-tag:v", "hvc1",
                                     "-movflags", "+faststart"
                                 ]
                             }
@@ -436,9 +435,15 @@ class ConversionService {
                     process!.standardError = errorPipe
 
                     let errorFileHandle = errorPipe.fileHandleForReading
+                    var accumulatedLog = ""
+                    let logQueue = DispatchQueue(label: "com.convertor.ffmpeg.log")
+                    
                     errorFileHandle.readabilityHandler = { handle in
                         let data = handle.availableData
-                        if let output = String(data: data, encoding: .utf8) {
+                        if !data.isEmpty, let output = String(data: data, encoding: .utf8) {
+                            logQueue.async {
+                                accumulatedLog += output
+                            }
                             if let progress = self.parseProgress(from: output, duration: duration) {
                                 progressHandler(progress)
                             }
@@ -448,6 +453,16 @@ class ConversionService {
                     let cleanupThumbnailURL = temporaryThumbnailURL
                     process!.terminationHandler = { process in
                         errorFileHandle.readabilityHandler = nil
+                        
+                        // Read any remaining data
+                        let remainderData = errorFileHandle.readDataToEndOfFile()
+                        if let remainder = String(data: remainderData, encoding: .utf8) {
+                            logQueue.sync {
+                                accumulatedLog += remainder
+                            }
+                        }
+                        
+                        let finalLog = logQueue.sync { accumulatedLog }
                         
                         // Nettoyer la miniature temporaire si elle existe
                         if let thumbURL = cleanupThumbnailURL {
@@ -488,17 +503,15 @@ class ConversionService {
                                 promise(
                                     .failure(
                                         ConversionError.ffmpegProcessFailed(
-                                            0, "Output file not created")))
+                                            0, "Output file not created. Log: \(finalLog)")))
                             }
                         } else {
-                            let errorData = errorFileHandle.readDataToEndOfFile()
-                            let errorOutput = String(data: errorData, encoding: .utf8) ?? ""
                             print("❌ FFmpeg failed with exit code: \(process.terminationStatus)")
-                            print("❌ FFmpeg error output: \(errorOutput)")
+                            print("❌ FFmpeg error output: \(finalLog)")
                             promise(
                                 .failure(
                                     ConversionError.ffmpegProcessFailed(
-                                        process.terminationStatus, errorOutput)))
+                                        process.terminationStatus, finalLog)))
                         }
                     }
 
