@@ -36,21 +36,21 @@ enum MediaType: String, CaseIterable, Identifiable {
 enum VideoCodec: String, CaseIterable, Identifiable {
     case h264 = "H.264"
     case h265 = "H.265 (HEVC)"
+    case hevcCopy = "HEVC Passthrough (Copy)"
     var id: String { rawValue }
     var ffmpegCodec: String {
+        switch self {
+        case .hevcCopy: return "copy"
         #if arch(arm64)
             // Use VideoToolbox for hardware acceleration on Apple Silicon
-            switch self {
             case .h264: return "h264_videotoolbox"
             case .h265: return "hevc_videotoolbox"
-            }
         #else
             // Fallback to software encoding on Intel Macs
-            switch self {
             case .h264: return "libx264"
             case .h265: return "libx265"
-            }
         #endif
+        }
     }
 }
 

@@ -276,37 +276,55 @@ class ConversionService {
                     } else if item.mediaType == .video {
                         // Video conversion
                         print("🎬 Starting video conversion for \(item.sourceURL.lastPathComponent)")
-                        var videoBitrate = item.customVideoBitrate ?? item.videoQuality.bitrate
-                        if let maxSize = item.maxFileSizeMB, item.customVideoBitrate == nil {
-                            // Calculate adaptive bitrate to fit in max size (only if not custom)
-                            let targetBits = Double(maxSize * 1024 * 1024 * 8)  // bits
-                            let audioBitsPerSecond = Double(item.audioBitrate.rawValue * 1000)
-                            let availableBitsForVideo = targetBits - (audioBitsPerSecond * duration)
-                            if availableBitsForVideo > 0 {
-                                videoBitrate = Int(availableBitsForVideo / duration / 1000)  // kbps
-                                videoBitrate = max(videoBitrate, 500)  // minimum 500kbps
+                        
+                        if item.videoCodec == .hevcCopy {
+                            arguments = [
+                                "-i", item.sourceURL.path,
+                                "-map", "0:v",
+                                "-c:v", "copy",
+                                "-tag:v", "hvc1",
+                                "-movflags", "+faststart"
+                            ]
+                            
+                            if let audioTrackID = item.selectedAudioTrackID {
+                                arguments.append(contentsOf: ["-map", "0:\(audioTrackID)", "-c:a", "copy"])
+                            } else {
+                                arguments.append(contentsOf: ["-map", "0:a?", "-c:a", "copy"])
+                            }
+                        } else {
+                            var videoBitrate = item.customVideoBitrate ?? item.videoQuality.bitrate
+                            if let maxSize = item.maxFileSizeMB, item.customVideoBitrate == nil {
+                                // Calculate adaptive bitrate to fit in max size (only if not custom)
+                                let targetBits = Double(maxSize * 1024 * 1024 * 8)  // bits
+                                let audioBitsPerSecond = Double(item.audioBitrate.rawValue * 1000)
+                                let availableBitsForVideo = targetBits - (audioBitsPerSecond * duration)
+                                if availableBitsForVideo > 0 {
+                                    videoBitrate = Int(availableBitsForVideo / duration / 1000)  // kbps
+                                    videoBitrate = max(videoBitrate, 500)  // minimum 500kbps
+                                }
+                            }
+                            arguments = [
+                                "-i", item.sourceURL.path,
+                                "-map", "0:v",  // Map video stream
+                                "-c:v", item.videoCodec.ffmpegCodec,
+                                "-b:v", "\(videoBitrate)k",
+                                "-vf", "scale=-2:\(item.videoResolution.height)",
+                                "-c:a", "aac",
+                                "-b:a", "\(item.audioBitrate.rawValue)k",
+                                "-movflags", "+faststart",
+                            ]
+                            if item.videoCodec == .h265 {
+                                arguments.append(contentsOf: ["-tag:v", "hvc1"])
+                            }
+                            if let audioTrackID = item.selectedAudioTrackID {
+                                arguments.append(contentsOf: ["-map", "0:\(audioTrackID)"])
+                            } else {
+                                // If no specific audio track is selected, map the first audio stream by default.
+                                // The '?’ makes it optional, so ffmpeg won't fail if there's no audio.
+                                arguments.append(contentsOf: ["-map", "0:a?"])
                             }
                         }
-                        arguments = [
-                            "-i", item.sourceURL.path,
-                            "-map", "0:v",  // Map video stream
-                            "-c:v", item.videoCodec.ffmpegCodec,
-                            "-b:v", "\(videoBitrate)k",
-                            "-vf", "scale=-2:\(item.videoResolution.height)",
-                            "-c:a", "aac",
-                            "-b:a", "\(item.audioBitrate.rawValue)k",
-                            "-movflags", "+faststart",
-                        ]
-                        if item.videoCodec == .h265 {
-                            arguments.append(contentsOf: ["-tag:v", "hvc1"])
-                        }
-                        if let audioTrackID = item.selectedAudioTrackID {
-                            arguments.append(contentsOf: ["-map", "0:\(audioTrackID)"])
-                        } else {
-                            // If no specific audio track is selected, map the first audio stream by default.
-                            // The '?’ makes it optional, so ffmpeg won't fail if there's no audio.
-                            arguments.append(contentsOf: ["-map", "0:a?"])
-                        }
+                        
                         if let subtitleTrackID = item.selectedSubtitleTrackID {
                             var subtitleArgs = [
                                 "-map", "0:\(subtitleTrackID)",
